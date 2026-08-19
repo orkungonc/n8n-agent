@@ -1,0 +1,44 @@
+{
+  "action": "upsert_workflow",
+  "workflow": {
+    "name": "Kâtip Köprü Testi",
+    "nodes": [
+      {
+        "parameters": {},
+        "id": "manual-trigger",
+        "name": "Başlat",
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [0, 0]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "status-field",
+                "name": "status",
+                "value": "Kâtip köprüsü çalışıyor",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "set-status",
+        "name": "Kâtip Durum",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [240, 0]
+      }
+    ],
+    "connections": {
+      "Başlat": {
+        "main": [[{"node":"Kâtip Durum","type":"main","index":0}]]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+}
