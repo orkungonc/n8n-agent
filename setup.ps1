@@ -35,11 +35,14 @@ $key | ConvertFrom-SecureString | Set-Content (Join-Path $StateDir 'n8n-key.txt'
 $startup = [Environment]::GetFolderPath('Startup')
 $cmdPath = Join-Path $startup 'n8n-agent.cmd'
 $agentPath = Join-Path $InstallDir 'agent.ps1'
-$cmd = "@echo off`r`nstart \"\" powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \"$agentPath\"`r`n"
+$cmd = @"
+@echo off
+start "" powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "$agentPath"
+"@
 Set-Content -Path $cmdPath -Value $cmd -Encoding ASCII
 
 Write-Host 'Agent simdi baslatiliyor...'
-Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$agentPath`""
+Start-Process powershell.exe -WindowStyle Hidden -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$agentPath)
 
 Write-Host ''
 Write-Host 'KURULUM TAMAMLANDI.'
