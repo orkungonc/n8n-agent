@@ -1,0 +1,95 @@
+{
+  "action": "upsert_workflow",
+  "workflow": {
+    "name": "Kâtip v3 - Belge Analiz ve Dilekçe",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "katip-v3-belge-analiz",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "katip-webhook",
+        "name": "Belgeyi Al",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [-720, 0],
+        "webhookId": "katip-v3-belge-analiz"
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $json.body || $json;\nconst text = String(body.documentText || body.text || body.content || '').trim();\nif (!text) throw new Error('Belge metni bulunamadi. documentText alanini gonderin.');\nif (text.length < 20) throw new Error('Belge metni analiz icin cok kisa.');\nconst country = String(body.country || 'Türkiye');\nconst language = String(body.language || 'tr');\nconst userGoal = String(body.userGoal || 'Belgeyi incele, haklari ve itiraz yollarini belirle; gerekiyorsa dilekce hazirla.');\nreturn [{json:{documentText:text.slice(0,120000),country,language,userGoal,receivedAt:new Date().toISOString()}}];"
+        },
+        "id": "prepare-document",
+        "name": "Belgeyi Hazırla",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [-480, 0]
+      },
+      {
+        "parameters": {
+          "jsCode": "const d=$json;\nconst system=`Sen Kâtip adlı belge analiz motorusun. Kullanıcının resmi veya hukuki belgesini sade ve dikkatli biçimde analiz et. Hukuki temsilci gibi davranma; kesin sonuç garantisi verme. Belgeden çıkarılamayan bilgileri uydurma. Tarih, süre, kurum ve parasal tutarlarda belgedeki metne sadık kal. Süre belirsizse bunu açıkça belirt. Yanıt sadece geçerli JSON olsun.`;\nconst prompt=`Ülke: ${d.country}\\nKullanıcının amacı: ${d.userGoal}\\n\\nBELGE:\\n${d.documentText}\\n\\nAşağıdaki JSON şemasına göre yanıt ver:\\n{\\n  \\\"documentType\\\": \\\"belge türü\\\",\\n  \\\"summary\\\": \\\"kısa sade özet\\\",\\n  \\\"issuer\\\": \\\"belgeyi düzenleyen kurum/kişi veya bilinmiyor\\\",\\n  \\\"importantDates\\\": [{\\\"date\\\":\\\"...\\\",\\\"meaning\\\":\\\"...\\\"}],\\n  \\\"amounts\\\": [{\\\"amount\\\":\\\"...\\\",\\\"meaning\\\":\\\"...\\\"}],\\n  \\\"rights\\\": [\\\"kullanıcının olası hakları\\\"],\\n  \\\"obligations\\\": [\\\"yükümlülükler\\\"],\\n  \\\"deadlines\\\": [{\\\"deadline\\\":\\\"...\\\",\\\"action\\\":\\\"...\\\",\\\"confidence\\\":\\\"high|medium|low\\\"}],\\n  \\\"objectionOptions\\\": [{\\\"route\\\":\\\"...\\\",\\\"where\\\":\\\"...\\\",\\\"how\\\":\\\"...\\\"}],\\n  \\\"risks\\\": [\\\"kaçırılmaması gereken riskler\\\"],\\n  \\\"nextSteps\\\": [\\\"öncelik sırasıyla yapılacaklar\\\"],\\n  \\\"petitionNeeded\\\": true,\\n  \\\"petition\\\": \\\"Gerekiyorsa doğrudan kullanılabilecek taslak dilekçe; gerekmiyorsa boş string\\\",\\n  \\\"missingInformation\\\": [\\\"analizi güçlendirecek eksik bilgiler\\\"],\\n  \\\"disclaimer\\\": \\\"Bu çıktı bilgilendirme amaçlıdır; kritik süre ve işlemler için ilgili kurum veya uzman doğrulaması önerilir.\\\"\\n}`;\nreturn [{json:{...d,openaiRequest:{model:'gpt-5-mini',store:false,input:[{role:'system',content:[{type:'input_text',text:system}]},{role:'user',content:[{type:'input_text',text:prompt}]}]}}}];"
+        },
+        "id": "build-prompt",
+        "name": "Kâtip Analiz Promptu",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [-240, 0]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.openai.com/v1/responses",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {"name": "Authorization", "value": "=Bearer {{$env.OPENAI_API_KEY}}"},
+              {"name": "Content-Type", "value": "application/json"}
+            ]
+          },
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify($json.openaiRequest) }}",
+          "options": {"timeout": 120000}
+        },
+        "id": "openai-analysis",
+        "name": "Kâtip AI Analizi",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [0, 0]
+      },
+      {
+        "parameters": {
+          "jsCode": "const r=$json;\nlet text='';\nif (typeof r.output_text==='string') text=r.output_text;\nif (!text && Array.isArray(r.output)) { for (const o of r.output) { if (Array.isArray(o.content)) { for (const c of o.content) { if (typeof c.text==='string') text += c.text; } } } }\nif (!text) throw new Error('AI yaniti bos geldi.');\ntext=text.trim().replace(/^```json\\s*/i,'').replace(/```$/,'').trim();\nlet analysis;\ntry { analysis=JSON.parse(text); } catch(e) { analysis={summary:text,parseWarning:'AI yaniti JSON olarak ayrıştırılamadı.'}; }\nreturn [{json:{ok:true,product:'Kâtip',version:'3',analysis}}];"
+        },
+        "id": "parse-result",
+        "name": "Kâtip Sonuç",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [240, 0]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json }}",
+          "options": {}
+        },
+        "id": "respond",
+        "name": "Sonucu Gönder",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [480, 0]
+      }
+    ],
+    "connections": {
+      "Belgeyi Al": {"main":[[{"node":"Belgeyi Hazırla","type":"main","index":0}]]},
+      "Belgeyi Hazırla": {"main":[[{"node":"Kâtip Analiz Promptu","type":"main","index":0}]]},
+      "Kâtip Analiz Promptu": {"main":[[{"node":"Kâtip AI Analizi","type":"main","index":0}]]},
+      "Kâtip AI Analizi": {"main":[[{"node":"Kâtip Sonuç","type":"main","index":0}]]},
+      "Kâtip Sonuç": {"main":[[{"node":"Sonucu Gönder","type":"main","index":0}]]}
+    },
+    "settings": {"executionOrder":"v1"}
+  }
+}
