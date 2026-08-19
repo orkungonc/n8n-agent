@@ -59,6 +59,19 @@ function Apply-Task($task) {
   }
 }
 
+function Read-ProcessedState {
+  $table = @{}
+  try {
+    $obj = Get-Content $StateFile -Raw | ConvertFrom-Json
+    if ($null -ne $obj) {
+      $obj.PSObject.Properties | ForEach-Object { $table[$_.Name] = [string]$_.Value }
+    }
+  } catch {
+    Log "state reset: $($_.Exception.Message)"
+  }
+  return $table
+}
+
 Log 'agent started'
 while ($true) {
   try {
@@ -66,7 +79,7 @@ while ($true) {
     git pull --ff-only 2>&1 | ForEach-Object { Log "git: $_" }
     Pop-Location
 
-    $processed = Get-Content $StateFile -Raw | ConvertFrom-Json -AsHashtable
+    $processed = Read-ProcessedState
     Get-ChildItem $TasksDir -Filter '*.json' -File -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object {
       $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash
       if ($processed[$_.Name] -eq $hash) { return }
