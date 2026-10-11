@@ -1,5 +1,3 @@
-# n8n Agent Tasks
+# Arşivlenmiş görevler
 
-Bu klasor ChatGPT tarafindan hazirlanan n8n otomasyon gorevleri icin kullanilir.
-
-Yerel agent bu klasordeki gorevleri okuyup n8n API uzerinden workflow olusturacak/guncelleyecek.
+Agent kaldırılmıştır. Bu klasördeki görevler geçmiş çalışmaları korumak için tutulmaktadır; otomatik işlenmez. Dokümantasyon örneği ../examples/tasks/example.json dosyasındadır.
