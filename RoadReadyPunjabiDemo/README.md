@@ -1,0 +1,2 @@
+# RoadReady Punjabi Tablet Preview
+Standalone offline Android UI demo (8 sample questions, English / Gurmukhi / Roman Punjabi, Android TTS and speech answer). This is **not** the 1,000-question release and includes no live payments, AdMob or official DVSA questions. Builds via GitHub Actions on the dedicated branch. No changes to n8n-agent main.
