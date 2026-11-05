@@ -1,0 +1,27 @@
+name: Fetch MRNGZ Objects licensed photo assets
+on:
+  push:
+    branches: [mrngz-objects-photo-assets]
+  workflow_dispatch:
+jobs:
+  photos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download licensed Unsplash image assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p mrngz-images
+          curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 90 'https://images.unsplash.com/photo-1667837896876-012372133bbd?auto=format&fit=crop&fm=jpg&q=78&w=1400' -o mrngz-images/bicycle.jpg
+          curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 90 'https://images.unsplash.com/photo-1771776193166-4a72e664cdff?auto=format&fit=crop&fm=jpg&q=78&w=1400' -o mrngz-images/skis.jpg
+          curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 90 'https://images.unsplash.com/photo-1762978902169-e5789f7b56b8?auto=format&fit=crop&fm=jpg&q=78&w=900' -o mrngz-images/wood-natural.jpg
+          curl -fL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 90 'https://images.unsplash.com/photo-1656992841987-dbcb012c87de?auto=format&fit=crop&fm=jpg&q=78&w=900' -o mrngz-images/wood-dark.jpg
+          file mrngz-images/*.jpg
+          ls -lh mrngz-images/
+          for f in mrngz-images/*.jpg; do test "$(stat -c '%s' "$f")" -gt 10000; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mrngz-licensed-photos
+          path: mrngz-images/*.jpg
+          if-no-files-found: error
