@@ -1,5 +1,5 @@
 plugins { id 'com.android.application' }
 android { namespace 'com.roadready.punjabi.demo'; compileSdk 35
- defaultConfig { applicationId 'com.roadready.punjabi.demo'; minSdk 24; targetSdk 34; versionCode 1; versionName '0.1-preview' }
+ defaultConfig { applicationId 'com.roadready.punjabi.tabletpreview2'; minSdk 24; targetSdk 34; versionCode 2; versionName '0.2-preview' }
  buildTypes { release { minifyEnabled false } }
 }
